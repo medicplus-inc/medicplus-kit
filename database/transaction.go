@@ -16,7 +16,8 @@ func NewQueryContext(ctx context.Context, db *gorm.DB) context.Context {
 	h.Write([]byte(fmt.Sprintf("%v", time.Now().UTC())))
 	privateKey := fmt.Sprintf("%x", h.Sum(nil))
 	ctx = context.WithValue(ctx, QUERY_KEY, privateKey)
-	return context.WithValue(ctx, privateKey, db)
+	ctx = context.WithValue(ctx, privateKey, db)
+	return ctx
 }
 
 func QueryFromContext(ctx context.Context) (*gorm.DB, bool) {
