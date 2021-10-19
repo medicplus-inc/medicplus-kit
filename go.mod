@@ -8,6 +8,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/go-chi/chi v1.5.4
 	github.com/go-kit/kit v0.12.0
+	github.com/go-redis/redis v6.15.9+incompatible // indirect
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/lib/pq v1.10.3

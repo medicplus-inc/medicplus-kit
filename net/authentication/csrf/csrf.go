@@ -7,6 +7,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/go-redis/redis"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -16,39 +17,40 @@ type CSRFToken struct {
 	ExpiredAt time.Time
 }
 
-var inMemToken map[string]CSRFToken
-
-func init() {
-	inMemToken = map[string]CSRFToken{}
+type CSRFService struct {
+	redisClient *redis.Client
 }
 
-func (c *CSRFToken) GenerateToken() string {
+func (c *CSRFService) GenerateToken() (string, error) {
 	hasher := sha1.New()
 	now := time.Now().UTC()
 	bytes, err := bcrypt.GenerateFromPassword([]byte(fmt.Sprintf("%v", now)), 14)
 	if err != nil {
-		log.Println("Error while generating CSRF token: ", err)
+		return "", err
 	}
+
 	hasher.Write(bytes)
 	token := hex.EncodeToString(hasher.Sum(nil))
-	inMemToken[token] = CSRFToken{
-		Token:     token,
-		CreatedAt: now,
-		ExpiredAt: now.Add(time.Minute * time.Duration(30)),
+
+	if err = c.redisClient.Set(
+		fmt.Sprintf("%s:%s", "csrf-token", token),
+		fmt.Sprintf("%v", time.Now().UTC()),
+		time.Minute*time.Duration(30),
+	).Err(); err != nil {
+		return "", err
 	}
 
-	return token
+	return token, nil
 }
 
-func ValidateToken(token string) bool {
-	v, ok := inMemToken[token]
-	if ok {
-		now := time.Now().UTC()
-		if now.Before(v.ExpiredAt) || now.Equal(v.ExpiredAt) {
-			delete(inMemToken, token)
-			return true
-		}
-		delete(inMemToken, token)
+func (c *CSRFService) ValidateToken(token string) bool {
+	_, err := c.redisClient.Get("csrf-token:" + token).Result()
+	if err != nil {
+		log.Printf("Error while collecting `csrf-token` [%s]: %v", token, err)
+		return false
 	}
-	return false
+
+	c.redisClient.Del(token)
+
+	return true
 }
