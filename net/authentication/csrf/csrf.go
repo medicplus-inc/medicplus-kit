@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/medicplus-inc/medicplus-kit/net/authentication"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -53,4 +54,12 @@ func (c *CSRFService) ValidateToken(token string) bool {
 	c.redisClient.Del(token)
 
 	return true
+}
+
+func NewCSRFService(
+	redisClient *redis.Client,
+) authentication.Authentication {
+	return &CSRFService{
+		redisClient: redisClient,
+	}
 }
