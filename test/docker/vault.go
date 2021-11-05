@@ -71,7 +71,7 @@ func (i *Instance) RootToken() string {
 	return vaultTestRootToken
 }
 
-func generateVaultInstance(data map[string]interface{}) {
+func GenerateVaultInstance(data map[string]interface{}) (*vault.Client, *Instance) {
 	ctx := context.Background()
 	instance, err := Run(ctx)
 	if err != nil {
@@ -105,4 +105,6 @@ func generateVaultInstance(data map[string]interface{}) {
 	if testString, ok := resultData["test"].(string); !ok || testString != "Hello Vault!" {
 		log.Fatalf("Wrong value returned from vault: %v", testString)
 	}
+
+	return client, instance
 }

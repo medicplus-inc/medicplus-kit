@@ -12,7 +12,7 @@ import (
 
 const databasePort = 5433
 
-func generatePostgresInstance(pool *dockertest.Pool) (*gorm.DB, *dockertest.Resource) {
+func GeneratePostgresInstance(pool *dockertest.Pool) (*gorm.DB, *dockertest.Resource) {
 	var db *gorm.DB
 	// Pull an image, create a container based on it and set all necessary parameters
 	opts := dockertest.RunOptions{
