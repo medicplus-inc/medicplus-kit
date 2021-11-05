@@ -114,5 +114,5 @@ func GenerateInstance(data map[string]interface{}) *api.Client {
 }
 
 func RemoveInstance() error {
-	return activeContainer.Stop()
+	return activeContainer.Stop(context.Background())
 }

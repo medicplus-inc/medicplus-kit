@@ -20,10 +20,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/nfnt/resize"
 
-	"github.com/google/go-cloud/blob"
-	"github.com/google/go-cloud/blob/gcsblob"
-	"github.com/google/go-cloud/blob/s3blob"
-	"github.com/google/go-cloud/gcp"
+	"gocloud.dev/blob"
+	"gocloud.dev/blob/gcsblob"
+	"gocloud.dev/blob/s3blob"
+	"gocloud.dev/gcp"
 )
 
 // Service represents the uploader service
@@ -210,7 +210,7 @@ func setupGCP(ctx context.Context, bucket string) (*blob.Bucket, error) {
 		return nil, err
 	}
 	// The bucket name must be globally unique.
-	return gcsblob.OpenBucket(ctx, bucket, c, nil)
+	return gcsblob.OpenBucket(ctx, c, bucket, nil)
 }
 
 // setupAWS setupAWS return bucket
@@ -230,5 +230,5 @@ func setupAWS(ctx context.Context, config *ConfigParams) (*blob.Bucket, error) {
 		),
 	}
 	s := session.Must(session.NewSession(c))
-	return s3blob.OpenBucket(ctx, config.Bucket, s, nil)
+	return s3blob.OpenBucket(ctx, s, config.Bucket, nil)
 }
