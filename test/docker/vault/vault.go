@@ -1,4 +1,4 @@
-package docker
+package vault
 
 import (
 	"context"
@@ -8,15 +8,17 @@ import (
 	"os"
 	"time"
 
-	vault "github.com/hashicorp/vault/api"
+	"github.com/hashicorp/vault/api"
 )
 
 const vaultTestRootToken = "701432d1-00e7-7c94-10c4-8450ab3c4b31"
 
 type Instance struct {
-	config *vault.Config
+	config *api.Config
 	*Container
 }
+
+var activeContainer *Container
 
 func init() {
 	os.Setenv("VAULT_TOKEN", vaultTestRootToken)
@@ -40,7 +42,7 @@ func Run(ctx context.Context) (*Instance, error) {
 		return nil, err
 	}
 
-	instance.config = vault.DefaultConfig()
+	instance.config = api.DefaultConfig()
 	instance.config.Address = fmt.Sprintf("http://127.0.0.1:%s", port)
 
 	timeout := time.After(10 * time.Second)
@@ -63,7 +65,7 @@ func (i *Instance) running() bool {
 	return err == nil && resp.StatusCode == 200
 }
 
-func (i *Instance) Config() *vault.Config {
+func (i *Instance) Config() *api.Config {
 	return i.config
 }
 
@@ -71,7 +73,7 @@ func (i *Instance) RootToken() string {
 	return vaultTestRootToken
 }
 
-func GenerateVaultInstance(data map[string]interface{}) (*vault.Client, *Instance) {
+func GenerateInstance(data map[string]interface{}) *api.Client {
 	ctx := context.Background()
 	instance, err := Run(ctx)
 	if err != nil {
@@ -79,7 +81,7 @@ func GenerateVaultInstance(data map[string]interface{}) (*vault.Client, *Instanc
 	}
 	defer instance.Container.Stop(ctx)
 
-	client, err := vault.NewClient(instance.Config())
+	client, err := api.NewClient(instance.Config())
 	if err != nil {
 		log.Fatalf("Unable to create vault client: %v", err)
 	}
@@ -106,5 +108,11 @@ func GenerateVaultInstance(data map[string]interface{}) (*vault.Client, *Instanc
 		log.Fatalf("Wrong value returned from vault: %v", testString)
 	}
 
-	return client, instance
+	activeContainer = instance.Container
+
+	return client
+}
+
+func RemoveInstance() error {
+	return activeContainer.Stop()
 }
