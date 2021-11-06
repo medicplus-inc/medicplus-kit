@@ -3,7 +3,6 @@ package vault
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"time"
 
 	dockertypes "github.com/docker/docker/api/types"
@@ -11,6 +10,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	docker "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/google/uuid"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
@@ -41,14 +41,15 @@ func (t *Container) Run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("unable to pull image: %v", err)
 	}
-
-	_, err = ioutil.ReadAll(status)
-	if err != nil {
-		return fmt.Errorf("unable to read status from image pull: %v", err)
-	}
 	status.Close()
 
-	c, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, networkConfig, &v1.Platform{}, "")
+	guid, _ := uuid.NewRandom()
+	containerName := fmt.Sprintf("vault-%s", guid.String())
+
+	c, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, networkConfig, &v1.Platform{
+		OS:           "linux",
+		Architecture: "amd64",
+	}, containerName)
 	if err != nil {
 		return fmt.Errorf("unable to create container: %v", err)
 	}
