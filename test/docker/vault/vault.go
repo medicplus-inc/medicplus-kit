@@ -73,7 +73,7 @@ func (i *Instance) RootToken() string {
 	return vaultTestRootToken
 }
 
-func GenerateInstance(data map[string]interface{}) *api.Client {
+func GenerateInstance(data map[string]interface{}) (*api.Client, *api.Secret) {
 	ctx := context.Background()
 	instance, err := Run(ctx)
 	if err != nil {
@@ -110,7 +110,7 @@ func GenerateInstance(data map[string]interface{}) *api.Client {
 
 	activeContainer = instance.Container
 
-	return client
+	return client, secret
 }
 
 func RemoveInstance() error {
