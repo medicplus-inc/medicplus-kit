@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/vault/api"
 )
 
+// ref: https://github.com/PolarGeospatialCenter/dockertest
+
 const vaultTestRootToken = "701432d1-00e7-7c94-10c4-8450ab3c4b31"
 
 type Instance struct {
@@ -43,7 +45,7 @@ func Run(ctx context.Context) (*Instance, error) {
 	}
 
 	instance.config = api.DefaultConfig()
-	instance.config.Address = fmt.Sprintf("http://127.0.0.1:%s", port)
+	instance.config.Address = fmt.Sprintf("http://0.0.0.0:%s", port)
 
 	timeout := time.After(10 * time.Second)
 	checkInterval := time.Tick(50 * time.Millisecond)
@@ -79,33 +81,28 @@ func GenerateInstance(data map[string]interface{}) (*api.Client, *api.Secret) {
 	if err != nil {
 		log.Fatalf("unable to create vault instance: %v", err)
 	}
-	defer instance.Container.Stop(ctx)
+	// defer instance.Container.Stop(ctx)
 
 	client, err := api.NewClient(instance.Config())
 	if err != nil {
+		defer instance.Container.Stop(ctx)
 		log.Fatalf("Unable to create vault client: %v", err)
 	}
 
 	client.SetToken(instance.RootToken())
 
-	log.Printf("%v", data)
-	_, err = client.Logical().Write("medicplus/medicplus/development", data)
+	newdata := make(map[string]interface{})
+	newdata["data"] = data
+	_, err = client.Logical().Write("secret/data/test", newdata)
 	if err != nil {
+		defer instance.Container.Stop(ctx)
 		log.Fatalf("Unable to write test value to vault: %v", err)
 	}
 
-	secret, err := client.Logical().Read("medicplus/medicplus/development")
+	secret, err := client.Logical().Read("secret/data/test")
 	if err != nil {
+		defer instance.Container.Stop(ctx)
 		log.Fatalf("Unable to read test value from vault: %v", err)
-	}
-
-	log.Printf("Returned: %v", secret)
-	resultData, ok := secret.Data["data"].(map[string]interface{})
-	if !ok {
-		log.Fatalf("Invalid data returned from vault: %v", secret.Data)
-	}
-	if testString, ok := resultData["test"].(string); !ok || testString != "Hello Vault!" {
-		log.Fatalf("Wrong value returned from vault: %v", testString)
 	}
 
 	activeContainer = instance.Container
