@@ -13,6 +13,8 @@ import (
 	"gorm.io/gorm"
 )
 
+// ref: https://jonnylangefeld.com/blog/how-to-write-a-go-api-part-3-testing-with-dockertest
+
 var databasePort int = 5432
 var lock sync.Mutex
 
