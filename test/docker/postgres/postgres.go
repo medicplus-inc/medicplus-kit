@@ -46,9 +46,10 @@ func getAvailablePort() string {
 	}
 }
 
-func GenerateInstance(pool *dockertest.Pool) (*gorm.DB, *dockertest.Resource) {
+func GenerateInstance(pool *dockertest.Pool) (*gorm.DB, *dockertest.Resource, string) {
 	var db *gorm.DB
 	port := getAvailablePort()
+
 	// Pull an image, create a container based on it and set all necessary parameters
 	opts := dockertest.RunOptions{
 		Repository:   "mdillon/postgis",
@@ -88,5 +89,5 @@ func GenerateInstance(pool *dockertest.Pool) (*gorm.DB, *dockertest.Resource) {
 		log.Fatalf("Could not connect to Docker: %s", err)
 	}
 
-	return db, resource
+	return db, resource, port
 }
