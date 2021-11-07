@@ -3,6 +3,9 @@ package postgres
 import (
 	"fmt"
 	"log"
+	"net"
+	"sync"
+	"time"
 
 	"github.com/ory/dockertest"
 	"github.com/ory/dockertest/docker"
@@ -10,19 +13,51 @@ import (
 	"gorm.io/gorm"
 )
 
-const databasePort = 5433
+var databasePort int = 5432
+var lock sync.Mutex
+
+func nextPort() int {
+	lock.Lock()
+	databasePort = databasePort + 1
+
+	defer lock.Unlock()
+	return databasePort
+}
+
+func isOpen(port string) bool {
+	timeout := time.Second
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort("", port), timeout)
+	if err != nil {
+		return true
+	}
+	if conn != nil {
+		defer conn.Close()
+		return false
+	}
+	return false
+}
+
+func getAvailablePort() string {
+	for {
+		p := fmt.Sprintf("%d", nextPort())
+		if isOpen(p) {
+			return p
+		}
+	}
+}
 
 func GenerateInstance(pool *dockertest.Pool) (*gorm.DB, *dockertest.Resource) {
 	var db *gorm.DB
+	port := getAvailablePort()
 	// Pull an image, create a container based on it and set all necessary parameters
 	opts := dockertest.RunOptions{
 		Repository:   "mdillon/postgis",
 		Tag:          "latest",
-		Env:          []string{"POSTGRES_PASSWORD=mysecretpassword"},
+		Env:          []string{"POSTGRES_PASSWORD=password"},
 		ExposedPorts: []string{"5432"},
 		PortBindings: map[docker.Port][]docker.PortBinding{
 			"5432": {
-				{HostIP: "0.0.0.0", HostPort: fmt.Sprintf("%d", databasePort)},
+				{HostIP: "0.0.0.0", HostPort: port},
 			},
 		},
 	}
@@ -35,7 +70,7 @@ func GenerateInstance(pool *dockertest.Pool) (*gorm.DB, *dockertest.Resource) {
 
 	// Exponential retry to connect to database while it is booting
 	if err := pool.Retry(func() error {
-		databaseConnStr := fmt.Sprintf("host=localhost port=%d user=postgres dbname=postgres password=mysecretpassword sslmode=disable", databasePort)
+		databaseConnStr := fmt.Sprintf("host=localhost port=%s user=postgres dbname=postgres password=password sslmode=disable", port)
 		db, err = gorm.Open(postgres.Open(databaseConnStr), &gorm.Config{})
 		if err != nil {
 			log.Println("Database not ready yet (it is booting up, wait for a few tries)...")
