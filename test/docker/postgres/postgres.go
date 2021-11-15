@@ -17,6 +17,7 @@ import (
 
 var databasePort int = 5432
 var lock sync.Mutex
+var dbInstanceLock sync.Mutex
 
 func nextPort() int {
 	lock.Lock()
@@ -49,6 +50,9 @@ func getAvailablePort() string {
 }
 
 func GenerateInstance(pool *dockertest.Pool) (*gorm.DB, *dockertest.Resource, string) {
+	dbInstanceLock.Lock()
+	defer dbInstanceLock.Unlock()
+
 	var db *gorm.DB
 	port := getAvailablePort()
 
