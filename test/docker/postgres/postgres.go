@@ -50,7 +50,7 @@ func getAvailablePort() string {
 	}
 }
 
-func GenerateInstance(pool *dockertest.Pool) (*gorm.DB, *dockertest.Resource, string, string) {
+func GenerateInstance(pool *dockertest.Pool) (*gorm.DB, *dockertest.Resource) {
 	dbInstanceLock.Lock()
 	defer dbInstanceLock.Unlock()
 
@@ -99,5 +99,5 @@ func GenerateInstance(pool *dockertest.Pool) (*gorm.DB, *dockertest.Resource, st
 		log.Fatalf("Could not connect to Docker: %s", err)
 	}
 
-	return db, resource, databaseName, port
+	return db, resource
 }
