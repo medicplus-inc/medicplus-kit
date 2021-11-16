@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/ory/dockertest"
 	"github.com/ory/dockertest/docker"
 	"gorm.io/driver/postgres"
@@ -76,12 +75,9 @@ func GenerateInstance(pool *dockertest.Pool) (*gorm.DB, *dockertest.Resource) {
 		log.Fatalf("Could not start resource: %s", err)
 	}
 
-	guid, _ := uuid.NewRandom()
-	databaseName := fmt.Sprintf("postgres%s", guid.String())
-
 	// Exponential retry to connect to database while it is booting
 	if err := pool.Retry(func() error {
-		databaseConnStr := fmt.Sprintf("host=localhost port=%s user=postgres dbname=%s password=password sslmode=disable", port, databaseName)
+		databaseConnStr := fmt.Sprintf("host=localhost port=%s user=postgres dbname=postgres password=password sslmode=disable", port)
 		db, err = gorm.Open(postgres.Open(databaseConnStr), &gorm.Config{})
 		if err != nil {
 			log.Println("Database not ready yet (it is booting up, wait for a few tries)...")
